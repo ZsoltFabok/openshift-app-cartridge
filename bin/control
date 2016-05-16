@@ -1,0 +1,87 @@
+#!/bin/bash
+
+source $OPENSHIFT_CARTRIDGE_SDK_BASH
+
+readonly APP_HOME=${OPENSHIFT_DATA_DIR}
+readonly APP_HOST=${OPENSHIFT_APP_IP}
+readonly APP_PORT=${OPENSHIFT_APP_PORT}
+readonly APP_LOG_DIR=${OPENSHIFT_LOG_DIR}
+readonly APP_PID_FILE=${APP_HOME}/pid
+
+function is_running {
+    if [ -f "$APP_PID_FILE" ]; then
+      local pid=$(cat $APP_PID_FILE);
+      local running_check=$(/bin/ps --no-headers --pid $pid)
+      if [ -n "$running_check" ]; then
+        # actually running
+        return 0
+      fi
+    fi
+    # not running
+    return 1
+}
+
+function kill_tree {
+    # send TERM (15) to all the children and grandchildren
+    # http://stackoverflow.com/a/15139734
+    kill -- -$(ps -o pgid= $1 | grep -o [0-9]*)
+}
+
+function start {
+  if ! is_running; then
+    echo -ne " >>> app is starting ... "
+    cd $APP_HOME
+    ./start_app $APP_HOME $APP_HOST $APP_PORT $APP_PID_FILE $APP_LOG_DIR
+    echo "Done"
+  else
+    echo " >>> app is still running, starting skipped"
+  fi
+}
+
+function stop {
+  if is_running; then
+    if [ -f "$APP_PID_FILE" ]; then
+      local pid=$(cat $APP_PID_FILE);
+      echo -ne " >>> sending SIGTERM to app (${pid}) ... " 1>&2
+      kill_tree $pid
+      echo "Done"
+    else
+      echo " >>> failed to locate app PID file" 1>&2
+    fi
+  else
+    echo " >>> app is not running"
+  fi
+}
+
+function restart {
+    stop
+    start
+}
+
+function status {
+    if is_running; then
+        echo " >>> app is running"
+    else
+        echo " >>> app is not running"
+    fi
+}
+
+function do_nothing {
+    echo " >>> do nothing with \"${1}\""
+}
+
+case "$1" in
+  start)       start ;;
+  stop)        stop ;;
+  restart)     restart ;;
+  status)      echo_status ;;
+  reload)      do_nothing "reload";;
+  tidy)        do_nothing "tidy" ;;
+  pre-build)   do_nothing "pre-build";;
+  build)       do_nothing "build" ;;
+  deploy)      do_nothing "deploy" ;;
+  post-deploy) do_nothing "post-deploy";;
+  *)           exit 0
+esac
+
+exit 0

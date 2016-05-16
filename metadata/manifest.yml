@@ -1,0 +1,22 @@
+Name: openshift-app-cartridge
+Cartridge-Short-Name: app
+Display-Name: Application Cartridge
+Description: "A simple cartridge for a regular application"
+Version: "0.1"
+License: "BSD"
+Vendor: None
+Cartridge-Version: "0.1"
+Cartridge-Vendor: zsoltfabok
+Website: https://github.com/zsoltfabok/openshift-app-cartridge
+Categories:
+  - service
+  - web_framework
+Endpoints:
+  - Private-IP-Name:   IP
+    Private-Port-Name: PORT
+    Private-Port:      8080
+    Public-Port-Name:  PROXY_PORT
+    Mappings:
+      - Frontend:      ""
+        Backend:       ""
+        Options:       { websocket: false }
